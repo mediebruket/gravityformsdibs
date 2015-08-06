@@ -23,7 +23,6 @@ if ( !function_exists('_debug') ){
   }
 }
 
-register_activation_hook( __FILE__, array('GFDibsHook', 'setupDBTables') );
-
+register_activation_hook( $plugin_file , array('GFDibsHook', 'setupDBTables') );
 $GFDibsUpdater = new GFDibsUpdater( __FILE__ );
 ?>
