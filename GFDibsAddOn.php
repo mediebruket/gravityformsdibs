@@ -4,24 +4,34 @@ define('DIBS_CLASS', 'GFDibsAddOn');
 define('DIBS_POST_URL', 'dibs_post_url');
 define('MERCHANT', 'dibs_merchant_id');
 define('ORDER_ID_SUFFIX', 'suffix');
+define('LICENCE', 'gravityformsdibs_licence_key');
 
+add_action( 'plugins_loaded', 'registerAddon' );
 
-if (class_exists("GFForms")) {
+function registerAddon(){
+
+  if (class_exists("GFAddOn")) {
+
     GFForms::include_addon_framework();
 
     class GFDibsAddOn extends GFAddOn {
         protected $DAO;
         protected $dibs_table_name;
         protected $gf_table_name;
-        protected $_version = "1.0";
-        protected $_min_gravityforms_version = "1.7.9999";
+        protected $_version = "1.0.1";
+        protected $_min_gravityforms_version = "1.9";
         protected $_full_path = __FILE__;
         protected $_url = "http://www.gravityforms.com";
         protected $_title = "Gravity Forms DIBS Add-On";
         protected $_short_title = "DIBS Add-On";
 
-        public $payment_types = array( 0 => 'Select a transaction type', 1 => 'Engangsbetaling', 2 => 'Betalingsavtale: med betaling', 3=> 'Betalingsavtale: kun registrering av kort');
-
+        public $payment_types =
+          array(
+            0 => __('Select a transaction type', DIBS_LANG),
+            1 => __('Engangsbetaling', DIBS_LANG),
+            2 => __('Betalingsavtale: med betaling', DIBS_LANG),
+            3 => __('Betalingsavtale: kun registrering av kort', DIBS_LANG)
+          );
 
         public function init(){
           if ( is_admin() ){
@@ -35,29 +45,42 @@ if (class_exists("GFForms")) {
 
 
         public static function pluginSettingsFields(){
+          global $plugin_file;
+          $Plugin = new GFDibsUpdater($plugin_file);
+          $Plugin->getCurrentVersionInfo();
+          $licence_status = null;
 
-          $platforms = array ( 0 => 'Select platform', 'https://payment.dibspayment.com/dpw/entrypoint' => 'DX platform', 'https://payment.architrade.com/paymentweb/start.action' => 'D2 platform');
+          $settings =
+            array(
+              DIBS_POST_URL   => __("Platform", DIBS_LANG),
+              MERCHANT        => __("Merchant ID", DIBS_LANG),
+              ORDER_ID_SUFFIX => __("Suffix (order id)", DIBS_LANG),
+              LICENCE         => __("Licence key", DIBS_LANG),
+            );
 
-          if(isset($_POST['_gaddon_setting_dibs_post_url'])){
-            update_option(DIBS_POST_URL, $_POST['_gaddon_setting_dibs_post_url']);
+          $platforms = array ( 0 => __('Select platform', DIBS_LANG ) , 'https://payment.dibspayment.com/dpw/entrypoint' => 'DX', 'https://payment.architrade.com/paymentweb/start.action' => 'D2');
+
+          if ( isset($_POST['updated']) ){
+            foreach ($_POST as $key => $field) {
+              update_option( $key, $field );
+            }
           }
 
-          if(isset($_POST['_gaddon_setting_dibs_merchant_id'])){
-            update_option(MERCHANT,$_POST['_gaddon_setting_dibs_merchant_id']);
-          }
+          // check licence
+          $Plugin = new GFDibsUpdater($plugin_file);
+          $valid = $Plugin->checkLicenceKey();
 
-          if(isset($_POST['_gaddon_setting_dibs_order_id_suffix'])){
-            update_option(ORDER_ID_SUFFIX, $_POST['_gaddon_setting_dibs_order_id_suffix']);
-          }
-
-
+          $licence_status = ( $valid  != '3' ) ? 'valid' : 'invalid';
+          set_transient( $Plugin->Slug.'_last_check', $valid, 0 );
         ?>
             <form action="" method="post">
               <h3><?php _e("DIBS Settings", DIBS_LANG) ?></h3>
-              <p>
+              <input name="updated" type="hidden" value='1' />
 
-                <label for="_gaddon_setting_dibs_post_url" class="inline"><?php _e("Platform", DIBS_LANG) ?></label>
-                <select name="_gaddon_setting_dibs_post_url" id="_gaddon_setting_dibs_post_url">
+              <!-- platform -->
+              <p>
+                <label for="<?php echo DIBS_POST_URL; ?>" class="gfdibs_setting"><?php echo $settings[DIBS_POST_URL];  ?></label>
+                <select name="<?php echo DIBS_POST_URL; ?>" id="<?php echo DIBS_POST_URL; ?>">
                   <?php
                   foreach ($platforms as $key => $value){
                     echo sprintf('<option value="%s" %s>%s</option>', $key, selected( $key, get_option(DIBS_POST_URL), false), $value);
@@ -67,13 +90,18 @@ if (class_exists("GFForms")) {
                </p>
 
               <p>
-                <label for="_gaddon_setting_dibs_merchant_id" class="inline"><?php _e("Merchant ID", DIBS_LANG) ?></label>
-                <input type="text" name="_gaddon_setting_dibs_merchant_id" id="_gaddon_setting_dibs_merchant_id" value="<?php echo get_option(MERCHANT); ?>" size="80" />
+                <label class="gfdibs_setting" for="<?php echo MERCHANT; ?>" class="inline"><?php echo $settings[MERCHANT]; ?></label>
+                <input type="text" name="<?php echo MERCHANT; ?>" id="<?php echo $settings[MERCHANT]; ?>" value="<?php echo get_option(MERCHANT); ?>" size="80" />
               </p>
 
               <p>
-                <label for="_gaddon_setting_dibs_order_id_suffix" class="inline"><?php _e("Suffix (order id)", DIBS_LANG) ?></label>
-                <input type="text" name="_gaddon_setting_dibs_order_id_suffix" id="_gaddon_setting_dibs_order_id_suffix" value="<?php echo get_option(ORDER_ID_SUFFIX); ?>" size="80" />
+                <label class="gfdibs_setting" for="<?php echo ORDER_ID_SUFFIX; ?>" class="inline"><?php echo $settings[ORDER_ID_SUFFIX]; ?></label>
+                <input type="text" name="<?php echo ORDER_ID_SUFFIX; ?>" id="<?php echo ORDER_ID_SUFFIX; ?>" value="<?php echo get_option(ORDER_ID_SUFFIX); ?>" size="80" />
+              </p>
+
+              <p>
+                <label class="gfdibs_setting" for="<?php echo LICENCE; ?>" class="inline"><?php echo $settings[LICENCE]; ?></label>
+                <input class="licence <?php echo $licence_status; ?>" type="text" name="<?php echo LICENCE; ?>" id="<?php echo LICENCE; ?>" value="<?php echo get_option( LICENCE ); ?>" size="80" />
               </p>
 
               <div>
@@ -190,8 +218,6 @@ if (class_exists("GFForms")) {
 
                       <tbody class="list:user user-list">
                           <?php
-
-
                           $settings = $this->DAO->getFeeds();
 
                           if(!get_option("dibs_merchant_id")){
@@ -258,55 +284,13 @@ if (class_exists("GFForms")) {
                   </table>
               </form>
           </div>
-          <script type="text/javascript">
-              function DeleteSetting(id){
-                  jQuery("#action_argument").val(id);
-                  jQuery("#action").val("delete");
-                  jQuery("#feed_form")[0].submit();
-              }
-              function ToggleActive(img, feed_id){
-                  var is_active = img.src.indexOf("active1.png") >=0
-                  if(is_active){
-                      img.src = img.src.replace("active1.png", "active0.png");
-                      jQuery(img).attr('title','<?php _e("Inactive", DIBS_LANG) ?>').attr('alt', '<?php _e("Inactive", DIBS_LANG) ?>');
-                  }
-                  else{
-                      img.src = img.src.replace("active0.png", "active1.png");
-                      jQuery(img).attr('title','<?php _e("Active", DIBS_LANG) ?>').attr('alt', '<?php _e("Active", DIBS_LANG) ?>');
-                  }
 
-                  var mysack = new sack(ajaxurl);
-                  mysack.execute = 1;
-                  mysack.method = 'POST';
-                  mysack.setVar( "action", "gf_paypal_update_feed_active" );
-                  mysack.setVar( "gf_paypal_update_feed_active", "<?php echo wp_create_nonce("gf_paypal_update_feed_active") ?>" );
-                  mysack.setVar( "feed_id", feed_id );
-                  mysack.setVar( "is_active", is_active ? 0 : 1 );
-                  mysack.onError = function() { alert('<?php _e("Ajax error while updating feed", DIBS_LANG ) ?>' )};
-                  mysack.runAJAX();
-
-                  return true;
-              }
-          </script>
           <?php
         }
 
         function editPage(){
           $this->DAO = new GFDibsDao();
           ?>
-          <style>
-              #paypal_submit_container{clear:both;}
-              .paypal_col_heading{padding-bottom:2px; border-bottom: 1px solid #ccc; font-weight:bold; width:120px;}
-              .paypal_field_cell {padding: 6px 17px 0 0; margin-right:15px;}
-
-              .paypal_validation_error{ background-color:#FFDFDF; margin-top:4px; margin-bottom:6px; padding-top:6px; padding-bottom:6px; border:1px dotted #C89797;}
-              .paypal_validation_error span {color: red;}
-              .left_header{float:left; width:200px;}
-              .margin_vertical_10{margin: 10px 0; padding-left:5px;}
-              .margin_vertical_30{margin: 30px 0; padding-left:5px;}
-              .width-1{width:300px;}
-              .gf_paypal_invalid_form{margin-top:30px; background-color:#FFEBE8;border:1px solid #CC0000; padding:10px; width:600px;}
-          </style>
 
           <div class="wrap">
               <h2><?php _e("DIBS Settings", DIBS_LANG); ?></h2>
@@ -321,9 +305,6 @@ if (class_exists("GFForms")) {
 
           if ( isset($_POST['update']) ){
             if ( isset($_POST['gf_dibs_form']) && is_numeric($_POST['gf_dibs_form'])  ){
-              // print_r("<pre>");
-              // print_r($_POST);
-              // print_r("</pre>");
               $feed_id = $this->DAO->setDibsMeta($_POST, $feed_id);
 
               if ( is_numeric($feed_id) ){
@@ -336,7 +317,6 @@ if (class_exists("GFForms")) {
           }
 
           $feed = $this->DAO->getDibsMeta($feed_id);
-
         ?>
 
         <form method="post" action="" id="dibs_edit_form">
@@ -376,14 +356,9 @@ if (class_exists("GFForms")) {
                 <label class="left_header" for="gf_dibs_type"><?php _e("Transaction Type", DIBS_LANG); ?></label>
                 <select id="gf_dibs_type" name="gf_dibs_type" >
                   <?php foreach ($this->payment_types as $key => $value) : ?>
-                   <option value="<?php echo $key; ?>" <?php  selected( $feed->meta['gf_dibs_type'], $key ); ?> ><?php echo $value; ?></option>
+                    <option value="<?php echo $key; ?>" <?php  selected( $feed->meta['gf_dibs_type'], $key ); ?> ><?php echo $value; ?></option>
                   <?php
-                  endforeach;
-                  ?>
-                    <!-- <option value="" <?php  selected( $feed->meta['gf_dibs_type'], "" ); ?> ><?php _e("Select a transaction type", DIBS_LANG); ?></option>
-                    <option value="1" <?php selected( $feed->meta['gf_dibs_type'], "1" ); ?> ><?php _e("Engangsbetaling", DIBS_LANG); ?></option>
-                    <option value="2" <?php selected( $feed->meta['gf_dibs_type'], "2" ); ?> ><?php _e("Betalingsavtale: med betaling", DIBS_LANG); ?></option>
-                    <option value="3" <?php selected( $feed->meta['gf_dibs_type'], "3" ); ?> ><?php _e("Betalingsavtale: kun registrering av kort", DIBS_LANG); ?></option> -->
+                  endforeach; ?>
                 </select>
             </div>
 
@@ -503,133 +478,10 @@ if (class_exists("GFForms")) {
             </div>
         </form>
         </div>
-
-        <script>
-          jQuery(document).ready(function(){
-            jQuery('#gf_dibs_form').change(function(){assignFormFields()});
-            jQuery('#gf_dibs_type').change(function(){canCaptureNow()});
-            checkForm();
-            setFormFields();
-          });
-
-
-          function setFormFields(){
-            generateOptionElements();
-
-            jQuery.each(feed_meta, function(index, value){
-              jQuery('#'+index+ ' option[value="'+value+'"]').attr('selected', true);
-            });
-
-            canCaptureNow();
-          }
-
-          function canCaptureNow(){
-            var dibs_type = jQuery('#gf_dibs_type').val();
-
-            if ( dibs_type == '1' || dibs_type == '2' ){
-              jQuery('#capture_now').show();
-            }
-            else{
-              jQuery('#capture_now').hide();
-              jQuery('#gf_dibs_capture_now').attr('checked', false);
-            }
-          }
-
-
-          function generateOptionElements(){
-            var form_id = jQuery('#gf_dibs_form').val();
-
-            resetSelectElements();
-
-            if ( form_id  ){
-              form_index = 'form_'+form_id;
-
-              jQuery.each(form_fields[form_index], function(index, value){
-                addFormField( value );
-              });
-            }
-          }
-
-          function resetSelectElements(){
-            jQuery('.form_field option').attr('selected', false);
-            jQuery('.custom').remove();
-          }
-
-          function addFormField( value ){
-            if ( typeof value.label !== 'undefined' && value.label.length){
-              if ( value.inputs != null && value.inputs.length ){
-                jQuery.each(value.inputs, function(input_index, input_value){
-                  jQuery('.form_field').append('<option value="'+input_value.id+'" class="custom">'+input_value.label+'</option>');
-                });
-              }
-              else{
-                jQuery('.form_field').append('<option value="'+value.id+'" class="'+value.type+' custom" >'+value.label+'</option>');
-              }
-            }
-          }
-
-          function assignFormFields(){
-            var form_id = jQuery('#gf_dibs_form').val();
-
-            resetSelectElements();
-
-            if ( form_id ){
-              form_index = 'form_'+form_id;
-
-              jQuery.each(form_fields[form_index], function(index, value){
-                  addFormField( value );
-
-                  if ( value.type == 'phone' ){
-                    jQuery('#billingMobile .phone').attr('selected', true);
-                  }
-
-                  if ( value.type == 'email' ){
-                    jQuery('#billingEmail .email').attr('selected', true);
-                  }
-
-                  if ( value.type == 'total' ){
-                    jQuery('#amount .total').attr('selected', true);
-                  }
-
-              });
-            }
-          }
-
-           function checkForm(){
-
-            jQuery('#dibs_edit_form').submit(function(e){
-
-              var post = true;
-
-              if (  !jQuery('#gf_dibs_mode_production').attr('checked') && !jQuery('#gf_dibs_mode_test').attr('checked') ){
-                post = false;
-              }
-
-              if ( !jQuery('#gf_dibs_type').val().length ){
-                post = false;
-              }
-
-              if ( !jQuery('#gf_dibs_form').val().length ){
-                post = false;
-              }
-
-              if ( !post ){
-                e.preventDefault();
-              }
-
-            });
-          }
-
-
-        </script>
-
         <?php
-
+      }
     }
-
-    }
-
-
-    new GFDibsAddOn();
+   new GFDibsAddOn();
+  }
 }
 ?>

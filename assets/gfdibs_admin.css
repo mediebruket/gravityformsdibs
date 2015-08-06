@@ -1,0 +1,55 @@
+.gfdibs_setting{
+	display: inline-block;
+	width:150px;
+}
+
+input.licence{
+	border:2px solid black;
+}
+
+.licence.valid{
+	border-color: #009933;
+}
+
+.licence.invalid{
+	border-color: #cc0000 ;
+}
+
+.width_5{
+	width: 5%;
+}
+
+.width_10{
+	width: 10%;
+}
+
+.width_15{
+	width: 15%;
+}
+
+.width_20{
+	width: 15%;
+}
+
+.dibs-transaction{
+	width: 100%;
+}
+.dibs-transaction th {
+  padding:5px 5px !important;
+}
+
+.no-padding{
+	padding:0px 0px !important;
+}
+
+#paypal_submit_container{clear:both;}
+.paypal_col_heading{padding-bottom:2px; border-bottom: 1px solid #ccc; font-weight:bold; width:120px;}
+.paypal_field_cell {padding: 6px 17px 0 0; margin-right:15px;}
+
+.paypal_validation_error{ background-color:#FFDFDF; margin-top:4px; margin-bottom:6px; padding-top:6px; padding-bottom:6px; border:1px dotted #C89797;}
+.paypal_validation_error span {color: red;}
+.left_header{float:left; width:200px;}
+.margin_vertical_10{margin: 10px 0; padding-left:5px;}
+.margin_vertical_30{margin: 30px 0; padding-left:5px;}
+.width-1{width:300px;}
+.gf_paypal_invalid_form{margin-top:30px; background-color:#FFEBE8;border:1px solid #CC0000; padding:10px; width:600px;}

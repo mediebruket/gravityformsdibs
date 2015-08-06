@@ -1,5 +1,5 @@
 <?php
-  class GFDibsDao   {
+  class GFDibsDao {
       protected $dibs_table_name;
       protected $gf_table_name;
       protected $db;
@@ -189,7 +189,7 @@
         // error_log($sql);
 
         $transaction_table = self::getDibsTransactionTableName();
-         $sql = "CREATE TABLE $transaction_table (
+         $sql = "CREATE TABLE IF NOT EXISTS   $transaction_table (
             `id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
             `order_id` int(15) unsigned NOT NULL,
             `completed` int(1) DEFAULT NULL,
@@ -386,8 +386,5 @@
       return $this->db->get_var($sql);
     }
 
-
   }
-
-
 ?>
