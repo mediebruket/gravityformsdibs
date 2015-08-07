@@ -18,28 +18,40 @@ function registerAddon(){
         protected $DAO;
         protected $dibs_table_name;
         protected $gf_table_name;
-        protected $_version = "1.0.1";
         protected $_min_gravityforms_version = "1.9";
         protected $_full_path = __FILE__;
         protected $_url = "http://www.gravityforms.com";
         protected $_title = "Gravity Forms DIBS Add-On";
         protected $_short_title = "DIBS Add-On";
+        public $payment_types;
 
-        public $payment_types =
+
+        function __construct(){
+
+          $this->payment_types =
           array(
-            0 => __('Select a transaction type', DIBS_LANG),
-            1 => __('Engangsbetaling', DIBS_LANG),
-            2 => __('Betalingsavtale: med betaling', DIBS_LANG),
-            3 => __('Betalingsavtale: kun registrering av kort', DIBS_LANG)
+            0 => __('Select payment type', DIBS_LANG ),
+            1 => __('Single payment', DIBS_LANG),
+            2 => __('Recurring payment & capture payment', DIBS_LANG),
+            3 => __('Recurring payment (registration only)', DIBS_LANG)
           );
 
-        public function init(){
           if ( is_admin() ){
             add_filter("gform_addon_navigation", array('GFDibsAddon', 'createMenu') );
 
             if(RGForms::get("page") == "gf_settings"){
                 RGForms::add_settings_page("DIBS", array("GFDibsAddon", "pluginSettingsFields") );
             }
+          }
+        }
+
+
+        function getArrayValue($array, $index){
+          if ( isset($array[$index]) ){
+            return $array[$index];
+          }
+          else{
+            return null;
           }
         }
 
@@ -130,7 +142,7 @@ function registerAddon(){
           $menus[] =
             array(
               "name"      => "gf_dibs",
-              "label"     => __("DIBS", "gravityformspaypal"),
+              "label"     => __("DIBS", DIBS_LANG),
               "callback"  =>  array('GFDibsAddon', "dibsPage"),
               // "permission" => $permission
             );
@@ -256,15 +268,11 @@ function registerAddon(){
                                           </div>
                                       </td>
                                       <td class="column-date">
-
-
                                         <?php
                                         if ( isset($setting['meta']['gf_dibs_type']) ){
                                           echo $this->payment_types[$setting['meta']['gf_dibs_type']];
                                         }
-
                                         ?>
-
                                       </td>
                                   </tr>
                                   <?php
@@ -273,9 +281,9 @@ function registerAddon(){
                           else{
                               ?>
                               <tr>
-                                  <td colspan="4" style="padding:20px;">
-                                      <?php echo sprintf(__("You don't have any DIBS feeds configured. Let's go %screate one%s!", DIBS_LANG), '<a href="admin.php?page=gf_dibs&view=edit&id=0&edit_feed=1">', "</a>"); ?>
-                                  </td>
+                                <td colspan="4" style="padding:20px;">
+                                 <?php echo sprintf(__("You don't have any DIBS feeds configured. Let's go %screate one%s!", DIBS_LANG), '<a href="admin.php?page=gf_dibs&view=edit&id=0&edit_feed=1">', "</a>"); ?>
+                                </td>
                               </tr>
                               <?php
                           }
@@ -293,8 +301,7 @@ function registerAddon(){
           ?>
 
           <div class="wrap">
-              <h2><?php _e("DIBS Settings", DIBS_LANG); ?></h2>
-
+            <h2><?php _e("DIBS Settings", DIBS_LANG); ?></h2>
           <?php
 
           //getting setting id (0 when creating a new one)
@@ -320,93 +327,85 @@ function registerAddon(){
         ?>
 
         <form method="post" action="" id="dibs_edit_form">
+          <input type="hidden" name="dibs_feed_id" value="<?php echo $feed_id; ?>" />
+          <input type="hidden" name="update" value="1" />
 
-            <input type="hidden" name="dibs_feed_id" value="<?php echo $feed_id; ?>" />
-            <input type="hidden" name="update" value="1" />
-
-            <?php if ( $error): ?>
-              <div class="margin_vertical_10 error">
-                <span><?php _e('There was an issue saving your feed. Please address the errors below and try again.', DIBS_LANG); ?></span>
-              </div>
-            <?php endif; ?>
-
-            <?php if ( $update): ?>
-              <div class="margin_vertical_10 updated">
-                  <span><?php _e('Settings are saved', DIBS_LANG); ?></span>
-              </div>
-            <?php endif; ?>
-
-
-            <!--  production / test   -->
-            <div class="margin_vertical_10">
-              <label class="left_header"><?php _e("Mode", DIBS_LANG); ?> <?php //gform_tooltip("paypal_mode") ?></label>
-
-              <!-- prod modus -->
-              <input type="radio" name="gf_dibs_mode" id="gf_dibs_mode_production" value="0" <?php checked( $feed->meta['gf_dibs_mode'], 0 ); ?> />
-              <label class="inline" for="gf_dibs_mode_production"><?php _e("Production", DIBS_LANG); ?></label>
-
-              <!-- test modus -->
-              <input type="radio" name="gf_dibs_mode" id="gf_dibs_mode_test" value="1" <?php checked( $feed->meta['gf_dibs_mode'], 1 ); ?> />
-              <label class="inline" for="gf_dibs_mode_test"><?php _e("Test", DIBS_LANG); ?></label>
+          <?php if ( $error): ?>
+            <div class="margin_vertical_10 error">
+              <span><?php _e('There was an issue saving your feed. Please address the errors below and try again.', DIBS_LANG); ?></span>
             </div>
+          <?php endif; ?>
 
-
-            <!--  transaction type  -->
-            <div class="margin_vertical_10">
-                <label class="left_header" for="gf_dibs_type"><?php _e("Transaction Type", DIBS_LANG); ?></label>
-                <select id="gf_dibs_type" name="gf_dibs_type" >
-                  <?php foreach ($this->payment_types as $key => $value) : ?>
-                    <option value="<?php echo $key; ?>" <?php  selected( $feed->meta['gf_dibs_type'], $key ); ?> ><?php echo $value; ?></option>
-                  <?php
-                  endforeach; ?>
-                </select>
+          <?php if ( $update): ?>
+            <div class="margin_vertical_10 updated">
+                <span><?php _e('Settings are saved', DIBS_LANG); ?></span>
             </div>
+          <?php endif; ?>
 
 
-            <!--  captureNow  -->
-            <div class="margin_vertical_10" id="capture_now" >
-                <label class="left_header" for="gf_dibs_capture_now"><?php _e("Capture after authorization", DIBS_LANG); ?></label>
-                  <input type="checkbox" name="gf_dibs_capture_now" id="gf_dibs_capture_now" value="1" <?php checked( $feed->meta['gf_dibs_capture_now'], 1 ); ?> />
-            </div>
+          <!--  production / test   -->
+          <div class="margin_vertical_10">
+            <label class="left_header"><?php _e("Mode", DIBS_LANG); ?> <?php //gform_tooltip("paypal_mode") ?></label>
+
+            <!-- prod modus -->
+            <input type="radio" name="gf_dibs_mode" id="gf_dibs_mode_production" value="0" <?php checked( $feed->meta['gf_dibs_mode'], 0 ); ?> />
+            <label class="inline" for="gf_dibs_mode_production"><?php _e("Production", DIBS_LANG); ?></label>
+
+            <!-- test modus -->
+            <input type="radio" name="gf_dibs_mode" id="gf_dibs_mode_test" value="1" <?php checked( $feed->meta['gf_dibs_mode'], 1 ); ?> />
+            <label class="inline" for="gf_dibs_mode_test"><?php _e("Test", DIBS_LANG); ?></label>
+          </div>
+
+
+          <!--  transaction type  -->
+          <div class="margin_vertical_10">
+            <label class="left_header" for="gf_dibs_type"><?php _e("Transaction Type", DIBS_LANG); ?></label>
+            <select id="gf_dibs_type" name="gf_dibs_type" >
+              <?php foreach ($this->payment_types as $key => $value) : ?>
+                <option value="<?php echo $key; ?>" <?php  selected( $feed->meta['gf_dibs_type'], $key ); ?> ><?php echo $value; ?></option>
+              <?php
+              endforeach; ?>
+            </select>
+          </div>
+
+          <!--  captureNow  -->
+          <div class="margin_vertical_10" id="capture_now" >
+            <label class="left_header" for="gf_dibs_capture_now"><?php _e("Capture after authorization", DIBS_LANG); ?></label>
+            <input type="checkbox" name="gf_dibs_capture_now" id="gf_dibs_capture_now" value="1" <?php checked( $this->getArrayValue($feed->meta, 'gf_dibs_capture_now'), 1 ); ?> />
+          </div>
 
 
             <!--  gf form id  -->
-            <div id="paypal_form_container" valign="top" class="margin_vertical_10" >
-                <label for="gf_paypal_form" class="left_header"><?php _e("Gravity Form", DIBS_LANG); ?></label>
+          <div id="paypal_form_container" valign="top" class="margin_vertical_10" >
+            <label for="gf_paypal_form" class="left_header"><?php _e("Gravity Form", DIBS_LANG); ?></label>
+            <?php $available_forms = $this->DAO->getAvailableForms($feed->meta['gf_dibs_form']); ?>
 
+            <select id="gf_dibs_form" name="gf_dibs_form" >
+              <option value=""><?php _e("Select a form", DIBS_LANG); ?> </option>
               <?php
-                // $active_form = rgar($config, 'form_id');
-                $available_forms = $this->DAO->getAvailableForms($feed->meta['gf_dibs_form']);
-              ?>
+              $form_fields = array();
 
-                <select id="gf_dibs_form" name="gf_dibs_form" >
-                    <option value=""><?php _e("Select a form", DIBS_LANG); ?> </option>
+              foreach($available_forms as $current_form) {
+                $form_meta =  $this->DAO->getFormMeta($current_form->id);
+
+                if ( isset($form_meta['fields']) && is_array($form_meta['fields']) ){
+                  foreach ($form_meta['fields'] as $key => $value) {
+                    if ( isset($value['type']) && $value['type'] == 'total' ){
+                      $form_fields['form_'.$current_form->id] = $form_meta['fields']; ?>
+                      <option value="<?php echo absint($current_form->id) ?>" <?php echo selected($feed->meta['gf_dibs_form'], $current_form->id); ?>><?php echo esc_html($current_form->title) ?></option>
                     <?php
-                    $form_fields = array();
+                    }
+                  }
+                }
+              ?>
+              <?php } ?>
+              </select>
+              <script>
+                var form_fields = <?php echo json_encode($form_fields); ?>;
+                var feed_meta = <?php echo json_encode($feed->meta); ?>;
+              </script>
 
-                    foreach($available_forms as $current_form) {
-                      $form_meta =  $this->DAO->getFormMeta($current_form->id);
-
-                      if ( isset($form_meta['fields']) && is_array($form_meta['fields']) ){
-                        foreach ($form_meta['fields'] as $key => $value) {
-                          if ( isset($value['type']) && $value['type'] == 'total' ){
-                            $form_fields['form_'.$current_form->id] = $form_meta['fields'];
-                            ?>
-                            <option value="<?php echo absint($current_form->id) ?>" <?php echo selected($feed->meta['gf_dibs_form'], $current_form->id); ?>><?php echo esc_html($current_form->title) ?></option>
-                          <?php
-                          }
-                        }
-
-                      }
-                    ?>
-                    <?php } ?>
-                </select>
-                <script>
-                  var form_fields = <?php echo json_encode($form_fields); ?>;
-                  var feed_meta = <?php echo json_encode($feed->meta); ?>;
-                </script>
-
-            </div>
+          </div>
 
             <h3><?php _e("DIBS Parameters", DIBS_LANG); ?> <a href="http://tech.dibspayment.com/input_parameters_dpw" target="_blank">Info</a></h3>
 
@@ -462,16 +461,14 @@ function registerAddon(){
              <h3><?php _e("Notifications", DIBS_LANG); ?></h3>
             <!--  Confirmation mail   -->
             <div class="margin_vertical_10">
-              <!-- <label class="left_header"><?php _e("Notifications", DIBS_LANG); ?> <?php //gform_tooltip("paypal_mode") ?></label> -->
-
               <!-- prod modus -->
-              <input type="checkbox" name="gf_dibs_no_confirmations" id="gf_dibs_no_confirmations" value="1" <?php checked( $feed->meta['gf_dibs_no_confirmations'], 1 ); ?> />
+              <input type="checkbox" name="gf_dibs_no_confirmations" id="gf_dibs_no_confirmations" value="1" <?php checked( $this->getArrayValue($feed->meta, 'gf_dibs_no_confirmations'), 1 ); ?> />
               <label class="inline" for="gf_dibs_no_confirmations"><?php _e("Send notifications only when payment is received.", DIBS_LANG); ?></label>
             </div>
 
 
             <div id="paypal_submit_container" class="margin_vertical_30">
-              <input type="submit" name="gf_paypal_submit" value="Save" class="button-primary"/>
+              <input type="submit" name="gf_paypal_submit" value="<?php _e("Save", DIBS_LANG); ?>" class="button-primary"/>
               <input type="button" value="<?php _e("Cancel", DIBS_LANG); ?>" class="button"  />
             </div>
 
