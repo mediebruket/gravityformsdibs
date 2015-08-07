@@ -26,7 +26,7 @@ class GFDibsUpdater{
 	function afterUpdate( $true, $hook_extra, $result ){
 		_debug('after update');
 		global $wp_filesystem;
-		$this->getCurrentVersionInfo();
+		//$this->getCurrentVersionInfo();
 
 		$filename = basename($this->PluginFile);
 		$slug = substr($filename, 0,strrpos($filename,'.'));
@@ -68,7 +68,6 @@ class GFDibsUpdater{
 	function getCurrentVersionInfo(){
 		$plugin_data = get_plugin_data( $this->PluginFile, $markup = false, $translate = false );
 
-
 		$this->Author 					= $plugin_data['Author'];
 		$this->AuthorURI 				= $plugin_data['AuthorURI'];
 		$this->Description 			= $plugin_data['Description'];
@@ -83,7 +82,7 @@ class GFDibsUpdater{
 	function setTransitent( $transient ){
 		$current_tag = $this->updateAvailable();
 
-		if ( $current_tag != '1' ){
+		if ( strlen($current_tag) && $current_tag != '1' ){
 			$tag = json_decode($current_tag);
 			$this->getCurrentVersionInfo();
 
