@@ -47,12 +47,12 @@ class GFDibsUpdater{
 
 
 	public static function getHost($dir){
-		$host = 'nettbutikk.mediebruket.no/';
+		$host = 'mediebruket.no/';
 
 		if ( is_numeric(strpos($_SERVER['HTTP_HOST'], 'sites')) ){
 			$host = $_SERVER['HTTP_HOST']."/nettbutikk/";
 		}
-		$host = "http://".$host.$dir;
+		$host = "https://".$host.$dir;
 
 		return $host;
 	}
