@@ -48,10 +48,9 @@ class GFDibsUpdater{
 
 	public static function getHost($dir){
 		_debug('GFDibsUpdater::getHost');
-		$host = 'www.mediebruket.no/nettbutikk/';
 
 		if ( is_numeric(strpos($_SERVER['HTTP_HOST'], 'sites')) ){
-			$host = $_SERVER['HTTP_HOST']."/nettbutikk/";
+			$host = 'http://'.$_SERVER['HTTP_HOST']."/nettbutikk/";
 		}
 		else{
 			$host = 'https://www.mediebruket.no/nettbutikk/';
