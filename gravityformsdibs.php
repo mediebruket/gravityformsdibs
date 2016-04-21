@@ -3,7 +3,7 @@
   Plugin Name: Gravity Forms DIBS
   Plugin URI: http://nettbutikk.mediebruket.no
   Description: DIBS add-on for Gravity Forms. Supports D2 and DX platform.
-  Version: 1.0.2
+  Version: 1.0.4
   Author: Mediebruket
   Author URI: http://mediebruket.no
 */
