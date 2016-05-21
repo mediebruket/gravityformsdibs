@@ -169,36 +169,47 @@ class GFDibsHook{
 
       foreach ($feed->meta as $key => $value) {
         $value = str_replace('.', '_', $value);
+        //$Dao->log( $key );
+        //$Dao->log( 'input_'.$value  );
         if ( isset($_POST['input_'.$value]) && strlen(trim($_POST['input_'.$value]))  ){
           $_POST[$key]  = $_POST['input_'.$value];
 
           if ( $key == 'amount' ){
             $_POST[$key] = $_POST[$key] * 100;
           }
+
+          if ( $key == 'billingEmail' ){
+            $_POST['email'] = $_POST[$key];
+          }
+
         }
       }
 
       // $_POST['orderId'] = hexdec(uniqid());
       $_POST['leadId']    = $lead['id'];
 
+      $order_id = uniqid(get_option(ORDER_ID_SUFFIX)."_");
       // dx
-      $_POST['orderId']   = uniqid(get_option(ORDER_ID_SUFFIX)."_");
+      $_POST['orderId']   = $order_id;
 
       // d2
-      $_POST['orderid']   = uniqid(get_option(ORDER_ID_SUFFIX)."_");
+      $_POST['orderid']   = $order_id;
 
       $_POST['currency']  = get_option('rg_gforms_currency');
       $_POST['language']  = 'nb_NO';
       $_POST['merchant']  = get_option(MERCHANT);
 
+      
       if ( isset($_POST['input_9999']) ){ // input_9999 => return url
         // D2
         $_POST['callbackurl']     = $_POST['input_9999'];
-        $_POST['acceptreturnUrl'] = $_POST['input_9999'];
+        $_POST['accepturl']       = $_POST['input_9999'];
         // DX
         $_POST['callbackUrl']     = $_POST['input_9999'];
         $_POST['acceptReturnUrl'] = $_POST['input_9999'];
 
+        //$Dao->log('$_POST');
+        //$Dao->log($_POST);
       }
 
 
