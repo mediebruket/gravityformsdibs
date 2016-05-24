@@ -163,6 +163,7 @@ function registerAddon(){
 
 
         public function pluginPage() {
+
            $this->DAO = new GFDibsDao();
 
           if(rgpost('action') == "delete"){
@@ -357,6 +358,8 @@ function registerAddon(){
           </div>
 
 
+          <hr/>
+
           <!--  transaction type  -->
           <div class="margin_vertical_10">
             <label class="left_header" for="gf_dibs_type"><?php _e("Transaction Type", DIBS_LANG); ?></label>
@@ -368,11 +371,23 @@ function registerAddon(){
             </select>
           </div>
 
+          <hr/>
+
           <!--  captureNow  -->
           <div class="margin_vertical_10" id="capture_now" >
             <label class="left_header" for="gf_dibs_capture_now"><?php _e("Capture after authorization", DIBS_LANG); ?></label>
             <input type="checkbox" name="gf_dibs_capture_now" id="gf_dibs_capture_now" value="1" <?php checked( $this->getArrayValue($feed->meta, 'gf_dibs_capture_now'), 1 ); ?> />
           </div>
+
+          <hr/>
+
+          <div class="margin_vertical_10" id="custom_merchant_id" >
+            <label class="left_header" for="gf_dibs_custom_merchant_id"><?php _e("Custom merchant id", DIBS_LANG); ?></label>
+            <input type="text" name="gf_dibs_custom_merchant_id" id="gf_dibs_custom_merchant_id" value="<?php echo  (( isset($feed->meta['gf_dibs_custom_merchant_id'])) ? $feed->meta['gf_dibs_custom_merchant_id'] : null)  ?>"  />
+            <span style="padding-left:202px;display:block;color: #cc0000;">Overwrites the <a href="<?php echo get_admin_url(); ?>admin.php?page=gf_settings&amp;subview=DIBS">global merchant id</a>
+          </div>
+
+          <hr/>
 
 
             <!--  gf form id  -->
@@ -456,6 +471,16 @@ function registerAddon(){
               <div class="left_header" for="billingPostalCode"><?php _e("Postal place", DIBS_LANG); ?></div>
                <select id="billingPostalPlace" name="billingPostalPlace" class="form_field"><option value="" class="default"><?php _e('Select field', DIBS_LANG); ?></option></select>
             </div>
+
+            <hr/>
+
+            <div class="margin_vertical_10">
+              <div class="left_header" for="paymentMethods"><?php _e("Payment methods", DIBS_LANG); ?></div>
+               <select id="paymentMethods" name="paymentMethods" class="form_field"><option value="" class="default"><?php _e('Select field', DIBS_LANG); ?></option></select>
+            </div>
+
+
+            <hr/>
 
 
              <h3><?php _e("Notifications", DIBS_LANG); ?></h3>

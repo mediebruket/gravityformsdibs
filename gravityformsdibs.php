@@ -3,7 +3,7 @@
   Plugin Name: Gravity Forms DIBS
   Plugin URI: http://nettbutikk.mediebruket.no
   Description: DIBS add-on for Gravity Forms. Supports D2 and DX platform.
-  Version: 1.1.1
+  Version: 1.2.0
   Author: Mediebruket
   Author URI: http://mediebruket.no
 */
@@ -25,4 +25,28 @@ if ( !function_exists('_debug') ){
 
 register_activation_hook( $plugin_file , array('GFDibsHook', 'setupDBTables') );
 $GFDibsUpdater = new GFDibsUpdater( __FILE__ );
+
+if(!function_exists('_log')){
+  function _log( $message ) {
+    if( WP_DEBUG === true ){
+      if( is_array( $message ) || is_object( $message ) ){
+        error_log( print_r( $message, true ) );
+      } else {
+        error_log( $message );
+      }
+    }
+  }
+}
+
+if(!function_exists('_debug')){
+  function _debug($message) {
+    if( WP_DEBUG === true ){
+      if( is_array( $message ) || is_object( $message ) ){
+        echo "<pre>" . print_r($message, true) . "</pre>";
+      } else {
+        echo "<pre>" . $message . "</pre>";
+      }
+    }
+  }
+}
 ?>

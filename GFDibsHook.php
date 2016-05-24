@@ -9,8 +9,17 @@ add_action("gform_entry_detail", array("GFDibsHook", 'addPaymentDetails'), 10, 2
 add_filter("gform_leads_before_export", array("GFDibsHook" , "modifyExportData") , 10, 3); // gravity forms lead export
 add_filter("wp_enqueue_scripts", array("GFDibsHook" , "includeFrontendScripts") , 10, 3); // front end assets
 add_filter("admin_enqueue_scripts", array("GFDibsHook" , "includeAdminScripts") , 10, 3); // back end assets
+add_filter("admin_body_class", array("GFDibsHook" , "addAdminBodyClass")  );
+
 
 class GFDibsHook{
+
+  public static function addAdminBodyClass( $classes ) {
+    $classes .= ' gf-dibs ';
+
+    return $classes;
+  }
+
 
   public static function setupDBTables() {
     $DAO = new GFDibsDao();
@@ -20,17 +29,17 @@ class GFDibsHook{
 
   public static function includeFrontendScripts(){
     wp_enqueue_script('jquery');
-    wp_register_script( 'gfdibsuser', plugin_dir_url(__FILE__).'/assets/gfdibs_user.js' );
+    wp_register_script( 'gfdibsuser', plugin_dir_url(__FILE__).'/assets/gfdibs_user.js', null, '1.2.0' );
     wp_enqueue_script('gfdibsuser');
   }
 
 
   public static function includeAdminScripts(){
     wp_enqueue_script('jquery');
-    wp_register_script( 'gfdibsadmin', plugin_dir_url(__FILE__).'/assets/gfdibs_admin.js' );
+    wp_register_script( 'gfdibsadmin', plugin_dir_url(__FILE__).'/assets/gfdibs_admin.js', null, '1.2.0' );
     wp_enqueue_script('gfdibsadmin');
 
-    wp_register_style( 'gfdibsadmin_style', plugin_dir_url(__FILE__).'/assets/gfdibs_admin.css' );
+    wp_register_style( 'gfdibsadmin_style', plugin_dir_url(__FILE__).'/assets/gfdibs_admin.css', null, '1.2.0' );
     wp_enqueue_style('gfdibsadmin_style');
   }
 
@@ -118,15 +127,18 @@ class GFDibsHook{
 
   public static function disableNotifications($unknown, $confirmation, $form, $lead){
     $Dao = new GFDibsDao();
+    _log('GFDibsHook::disableNotifications()');
 
     $is_disabled = false;
 
     if ( $feed_id = $Dao->isDibsForm($form['id']) ){
       $feed = $Dao->getDibsMeta($feed_id);
 
-      $Dao->log($feed->meta['gf_dibs_no_confirmations']);
-      if ( isset($feed->meta['gf_dibs_no_confirmations']) && $feed->meta['gf_dibs_no_confirmations'] == '1' ){
-        $is_disabled = true;
+      if(  self::isDibsPayment($feed, $lead) ){
+        $Dao->log($feed->meta['gf_dibs_no_confirmations']);
+        if ( isset($feed->meta['gf_dibs_no_confirmations']) && $feed->meta['gf_dibs_no_confirmations'] == '1' ){
+          $is_disabled = true;
+        }
       }
     }
 
@@ -134,11 +146,50 @@ class GFDibsHook{
   }
 
 
+  public static function isDibsPayment($feed, $lead){
+    // _log('$feed');
+    // _log($feed);
+    // _log('$lead');
+    // _log($lead);
+    $is_dibs_payment = true;
+
+    if ( isset($feed->meta['paymentMethods']) && trim($feed->meta['paymentMethods']) ){
+      $payment_method_field_id = $feed->meta['paymentMethods'];
+
+      if ( isset($lead[$payment_method_field_id]) && trim($lead[$payment_method_field_id]) && strtolower($lead[$payment_method_field_id]) != 'dibs' ){
+        $is_dibs_payment = false;
+      }
+    }
+
+    return $is_dibs_payment;
+  }
+
+
+  public static function checkIfCustomMerchantId($feed){
+    $custom_merchant_id = null;
+    if ( isset($feed->meta['gf_dibs_custom_merchant_id']) ){
+      $tmp_cmid = trim($feed->meta['gf_dibs_custom_merchant_id']);
+      if ( is_numeric($tmp_cmid) ){
+        $custom_merchant_id = $tmp_cmid;
+      }
+    }
+
+    return $custom_merchant_id;
+  }
+
+
   public static function dibsTransition($confirmation, $form, $lead, $ajax){
     $Dao = new GFDibsDao();
+    _log('GFDibsHook::dibsTransition()');
+
 
     if ( $feed_id = $Dao->isDibsForm($form['id']) ){
       $feed = $Dao->getDibsMeta($feed_id);
+
+      // check if user has choosen an alternative payment method
+      if( !self::isDibsPayment($feed, $lead) ){
+        return $confirmation;
+      }
 
       // dibs test modus
       if ( isset($feed->meta['gf_dibs_mode']) && $feed->meta['gf_dibs_mode'] == '1' ){
@@ -197,9 +248,16 @@ class GFDibsHook{
 
       $_POST['currency']  = get_option('rg_gforms_currency');
       $_POST['language']  = 'nb_NO';
-      $_POST['merchant']  = get_option(MERCHANT);
+      $_POST['merchant']  = trim(get_option(MERCHANT));
 
-      
+      if ( $custom_merchant_id = self::checkIfCustomMerchantId($feed) ){
+        $_POST['merchant'] = $custom_merchant_id;
+      }
+
+
+      $_POST['send_to_dibs']  = '1';
+
+
       if ( isset($_POST['input_9999']) ){ // input_9999 => return url
         // D2
         $_POST['callbackurl']     = $_POST['input_9999'];
@@ -221,7 +279,7 @@ class GFDibsHook{
       $confirmation = '<form action="'.get_option(DIBS_POST_URL).'" name="dibs_post_form" id="dibs_post_form" method="post" >';
       foreach ($_POST as $key => $value) {
         if ( !is_numeric(strpos($key, 'input')) && !is_numeric(strpos($key, 'MAX_FILE_SIZE'))  && !is_numeric(strpos($key, 'state')) && !is_numeric(strpos($key, 'gform')) ){
-          $confirmation .=  sprintf('<input type="hidden" name="%s" value="%s" />', $key, $value );
+          $confirmation .=  sprintf('<input type="hidden" name="%s" id="%s" value="%s" />', $key, $key, $value );
         }
 
       }
@@ -300,13 +358,13 @@ class GFDibsHook{
     $Dao = new GFDibsDao();
 
     if ( isset($_POST) && count($_POST) ){
-      $Dao->log('GF DIBS add-on');
-      $Dao->log('User is coming back from DIBS');
-      $Dao->log('Post variables');
-      $Dao->log($_POST);
+      _log('GF DIBS add-on');
+      _log('User is coming back from DIBS');
+      _log('Post variables');
+      _log($_POST);
     }
 
-      $feed_id = $Dao->isDibsForm($form['id']);
+    $feed_id = $Dao->isDibsForm($form['id']);
 
     $block = false;
     // $Dao->log($_SERVER);
