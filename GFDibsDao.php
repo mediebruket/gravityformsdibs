@@ -1,4 +1,6 @@
 <?php
+
+  add_action( 'init', array('GFDibsDao', 'updateDb') );
   class GFDibsDao {
       protected $dibs_table_name;
       protected $gf_table_name;
@@ -17,6 +19,15 @@
         $this->dibs_table_name = self::getDibsTableName();
         $this->gf_table_name   = self::getDibsTransactionTableName();
       }
+
+
+      public static function updateDb(){
+        global $wpdb;
+        $sql =  sprintf("ALTER TABLE %s MODIFY COLUMN order_id varchar(50) NOT NULL", $wpdb->prefix.'rg_dibs_transaction' ) ;
+
+        $wpdb->query($sql);
+      }
+
 
       function getAvailableForms( $current_form_id = null){
         $forms = RGFormsModel::get_forms();
@@ -52,7 +63,7 @@
               'date_created'  => date('Y-m-d H:i:s')
             ),
             array(
-              '%d', // order_id
+              '%s', // order_id
               '%d', // lead_id
               '%s', // payment_type
               '%d', // test
@@ -65,11 +76,21 @@
       }
 
       function updateTransaction( $post ){
+        // _log('GFDibsDao::updateTransaction');
+        // _log($post);
+
+        if ( isset( $post['transaction']) ){
+          $transaction_id = $post['transaction'];
+        }
+        elseif ( isset( $post['transact']) ){
+          $transaction_id = $post['transact'];
+        }
+
         $this->db->update(
           $this->gf_table_name,
           array(
             'completed'         => 1,
-            'transaction_id'    => ( isset($post['transaction']) ) ? $post['transaction'] : false,
+            'transaction_id'    => $transaction_id,
             'ticket'            => ( isset($post['ticket']) ) ? $post['ticket'] : false,
           ),
           array( 'order_id' => $post['orderId'] ),
@@ -83,11 +104,13 @@
 
       function getTransactionByLeadId($lead_id){
         $sql = sprintf('SELECT * FROM %s where lead_id = %d', $this->gf_table_name, $lead_id);
+        // _log($sql);
         return $this->db->get_row($sql);
       }
 
       function getTransactionByOrderId($order_id){
-        $sql = sprintf('SELECT * FROM %s where order_id = %d', $this->gf_table_name, $order_id);
+        $sql = sprintf("SELECT * FROM %s where order_id = '%s'", $this->gf_table_name, $order_id);
+        // _log($sql);
         return $this->db->get_row($sql);
       }
 
@@ -189,9 +212,9 @@
         // error_log($sql);
 
         $transaction_table = self::getDibsTransactionTableName();
-         $sql = "CREATE TABLE IF NOT EXISTS   $transaction_table (
+         $sql = "CREATE TABLE IF NOT EXISTS $transaction_table (
             `id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-            `order_id` int(15) unsigned NOT NULL,
+            `order_id` varchar(50) NOT NULL,
             `completed` int(1) DEFAULT NULL,
             `transaction_id` varchar(50) DEFAULT NULL,
             `payment_type` varchar(50) DEFAULT NULL,

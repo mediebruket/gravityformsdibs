@@ -2,7 +2,8 @@
 add_filter("gform_pre_render", array("GFDibsHook", "preRenderForm")); // hidden input with return url
 add_action("gform_confirmation", array("GFDibsHook", "dibsTransition"), 10, 4 ); // before payment on DIBS
 add_filter("gform_disable_notification", array("GFDibsHook", 'disableNotifications'), 10, 4); // disabled notification on submit
-add_filter("gform_form_tag",  array("GFDibsHook", "formTag"), 10, 2); // after payment
+add_filter("gform_form_tag",  array("GFDibsHook", "formTag"), 10, 2); // shows confirmation message after payment
+add_action("init",  array("GFDibsHook", "updateLeadAfterPayment"), 10, 2); // checks if payment received
 add_filter("gform_pre_send_email", array("GFDibsHook", "parseNotification"), 10, 1); // send notification mail after payment
 add_filter("gform_entries_column_filter", array("GFDibsHook" , "changeColumnData") , 10, 5); // gravity forms backend
 add_action("gform_entry_detail", array("GFDibsHook", 'addPaymentDetails'), 10, 2); // gravity forms back end
@@ -52,6 +53,22 @@ class GFDibsHook{
 
       // $feed = $Dao->getDibsMeta($feed_id);
 
+      // hidden input form id
+      $Field = new GF_Field_Hidden();
+
+      $Field->type          = 'hidden';
+      $Field->label         = 'dibs_form_id';
+      $Field->pageNumber    = 1;
+      $Field->formId        = $form['id'];
+
+      $Field->id            = 9998;
+      $Field->inputName     = 'dibs_form_id';
+      $Field->defaultValue  = $form['id'];
+
+      array_push($form['fields'], $Field);
+
+
+      // hidden input return url
       $Field = new GF_Field_Hidden();
 
       $Field->type          = 'hidden';
@@ -218,6 +235,7 @@ class GFDibsHook{
       unset($feed->meta['gf_dibs_type']);
       unset($feed->meta['gf_dibs_mode']);
 
+
       foreach ($feed->meta as $key => $value) {
         $value = str_replace('.', '_', $value);
         //$Dao->log( $key );
@@ -239,7 +257,12 @@ class GFDibsHook{
       // $_POST['orderId'] = hexdec(uniqid());
       $_POST['leadId']    = $lead['id'];
 
-      $order_id = uniqid(get_option(ORDER_ID_SUFFIX)."_");
+      $order_id = uniqid();
+
+      if ( $suffix = get_option(ORDER_ID_SUFFIX) ){
+        $order_id = $suffix.'_'.$order_id;
+      }
+
       // dx
       $_POST['orderId']   = $order_id;
 
@@ -257,6 +280,10 @@ class GFDibsHook{
 
       $_POST['send_to_dibs']  = '1';
 
+
+      if ( isset($_POST['input_9998']) ){ // input_9999 => return url
+        $_POST['dibs_form_id'] = $_POST['input_9998'];
+      }
 
       if ( isset($_POST['input_9999']) ){ // input_9999 => return url
         // D2
@@ -354,28 +381,101 @@ class GFDibsHook{
     return $message;
   }
 
-  public static function formTag($form_tag, $form){
-    $Dao = new GFDibsDao();
 
-    if ( isset($_POST) && count($_POST) ){
+  public static function hasRedirect($form){
+    $redirect = null;
+    if ( isset($form['confirmations']) && is_array($form['confirmations']) ){
+      foreach ($form['confirmations'] as $key => $confirmation) {
+        if ( is_array($confirmation) && $confirmation['isDefault'] == '1' ){
+          if ( $confirmation['type'] == 'page' ){
+            $redirect = get_permalink( $confirmation['pageId'] );
+          }
+          elseif ( $confirmation['type'] == 'redirect' ){
+            $redirect = $confirmation['url'];
+          }
+        }
+      }
+    }
+
+    return $redirect;
+  }
+
+  public static function grabOrderId( $post ){
+    $order_id = null;
+    if ( isset($post['orderId']) && strlen($post['orderId']) ){
+      $order_id = $post['orderId'];
+    }
+    else if ( isset($post['orderid']) && strlen($post['orderid']) ){
+      $order_id = $post['orderid'];
+    }
+
+    return $order_id;
+
+  }
+
+
+  public static function updateLeadAfterPayment(){
+
+    $order_id = self::grabOrderId($_POST);
+
+    if ( isset($_POST) && $order_id && isset($_POST['dibs_form_id']) && is_numeric($_POST['dibs_form_id']) ){
       _log('GF DIBS add-on');
+      _log($order_id);
       _log('User is coming back from DIBS');
       _log('Post variables');
       _log($_POST);
+      $Dao = new GFDibsDao();
+
+      $form = GFAPI::get_form( $_POST['dibs_form_id'] );
+      $feed_id = $Dao->isDibsForm($form['id']);
+      $feed = $Dao->getDibsMeta($feed_id);
+
+      $block = false;
+      if ( isset($_SERVER['HTTP_USER_AGENT']) && is_numeric(strpos($_SERVER['HTTP_USER_AGENT'], 'Java')) or isset($_SERVER['HTTP_X_ORIG_UA']) && is_numeric(strpos($_SERVER['HTTP_X_ORIG_UA'], 'Java'))  ){
+        $block = true;
+      }
+
+
+      if ( $feed_id && $order_id && !$block ){
+
+        // update Transaction
+        $Dao->updateTransaction($_POST);
+
+        // send confirmation mails
+        _log('confm');
+        _log($order_id);
+        if ( $Transaction = $Dao->getTransactionByOrderId($order_id) ){
+          _log($Transaction);
+           /* prod */
+          if ( isset($feed->meta['gf_dibs_no_confirmations']) && $feed->meta['gf_dibs_no_confirmations'] == '1' && !$Dao->getDateCompleted($Transaction->lead_id) ){
+            GFDibsAddOn::sendNotification('form_submission', $form, $Transaction->lead_id);
+            $Dao->setDateCompleted($Transaction->lead_id);
+          }
+          /* test */
+          // GFDibsAddOn::sendNotification('form_submission', $form, $Transaction->lead_id);
+          //
+        }
+
+
+        if ( $location = self::hasRedirect($form) ){
+          wp_redirect( $location );
+          die();
+        }
+      }
     }
+  }
 
-    $feed_id = $Dao->isDibsForm($form['id']);
 
-    $block = false;
-    // $Dao->log($_SERVER);
-    if ( isset($_SERVER['HTTP_USER_AGENT']) && is_numeric(strpos($_SERVER['HTTP_USER_AGENT'], 'Java')) or isset($_SERVER['HTTP_X_ORIG_UA']) && is_numeric(strpos($_SERVER['HTTP_X_ORIG_UA'], 'Java'))  ){
-      $block = true;
-    }
 
-    if ( $feed_id && isset($_POST['orderId']) & !$block ){
-      // update Transaction
-      $Dao->updateTransaction($_POST);
+
+
+  public static function formTag($form_tag, $form){
+
+    if ( isset($_POST['orderId']) ){
+      $Dao = new GFDibsDao();
+      $feed_id = $Dao->isDibsForm($form['id']);
       // get feed settings
+
       $feed = $Dao->getDibsMeta($feed_id);
 
       $placeholders = array();
@@ -392,32 +492,23 @@ class GFDibsHook{
           }
         }
 
-        /* prod */
-        if ( isset($feed->meta['gf_dibs_no_confirmations']) && $feed->meta['gf_dibs_no_confirmations'] == '1' && !$Dao->getDateCompleted($Transaction->lead_id) ){
-          GFDibsAddOn::sendNotification('form_submission', $form, $Transaction->lead_id);
-          $Dao->setDateCompleted($Transaction->lead_id);
-        }
-        /* test */
-        // GFDibsAddOn::sendNotification('form_submission', $form, $Transaction->lead_id);
-
         // get placeholders
         $placeholders = self::getPlaceholders($Transaction, $feed );
 
         // replace placeholders
         $message = self::replacePlaceholders($message, $placeholders);
-      }
 
-      // sanitize form tag
-      $form_tag = preg_replace("|action='(.*?)'|", "style='display:none;'", $form_tag);
-      ?>
-        <div class="thank-you" style="background:#e5e4e1;padding:20px 20px;border-radius:10px;">
-          <p><?php echo $message; ?></p>
-        </div>
-      <?php
+        // sanitize form tag
+        $form_tag = preg_replace("|action='(.*?)'|", "style='display:none;'", $form_tag);
+
+        printf('<div class="thank-you"><p>%s</p></div>', $message);
+      }
     }
+
 
     return $form_tag;
   }
+
 
   public static function addPaymentDetails($form, $lead){
     $Dao = new GFDibsDao();

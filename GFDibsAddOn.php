@@ -66,7 +66,7 @@ function registerAddon(){
             array(
               DIBS_POST_URL   => __("Platform", DIBS_LANG),
               MERCHANT        => __("Merchant ID", DIBS_LANG),
-              ORDER_ID_SUFFIX => __("Suffix (order id)", DIBS_LANG),
+              ORDER_ID_SUFFIX => __("Prefix (order id)", DIBS_LANG),
               LICENCE         => __("Licence key", DIBS_LANG),
             );
 
