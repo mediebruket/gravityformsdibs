@@ -93,6 +93,11 @@ class GFDibsHook{
       $Transaction = $Dao->getTransactionByLeadId($Entry['id']);
       $value =  $Transaction->transaction_id;
     }
+    else if ( $index == 'order_id'){
+      $Dao = new GFDibsDao();
+      $Transaction = $Dao->getTransactionByLeadId($Entry['id']);
+      $value =  $Transaction->order_id;
+    }
     else if ( $index ==  'payment_status'){
       $Dao = new GFDibsDao();
       $Transaction = $Dao->getTransactionByLeadId($Entry['id']);
@@ -199,7 +204,6 @@ class GFDibsHook{
     $Dao = new GFDibsDao();
     _log('GFDibsHook::dibsTransition()');
 
-
     if ( $feed_id = $Dao->isDibsForm($form['id']) ){
       $feed = $Dao->getDibsMeta($feed_id);
 
@@ -250,9 +254,23 @@ class GFDibsHook{
           if ( $key == 'billingEmail' ){
             $_POST['email'] = $_POST[$key];
           }
-
         }
       }
+
+      // set ordertext
+      $_POST['ordertext'] = null;
+      if ( isset($_POST['billingFirstName']) ){
+        $_POST['ordertext'] .= $_POST['billingFirstName']." ";
+      }
+      if ( isset($_POST['billingLastName']) ){
+        $_POST['ordertext'] .= $_POST['billingLastName']." ";
+      }
+
+      if ( isset($_POST['email']) ){
+        $_POST['ordertext'] .= "(".$_POST['email'].")";
+      }
+      $_POST['ordertext'] =  trim($_POST['ordertext']);
+
 
       // $_POST['orderId'] = hexdec(uniqid());
       $_POST['leadId']    = $lead['id'];
@@ -303,7 +321,7 @@ class GFDibsHook{
       $Dao->log($transaction_id);
 
 
-      $confirmation = '<form action="'.get_option(DIBS_POST_URL).'" name="dibs_post_form" id="dibs_post_form" method="post" >';
+      $confirmation = '<form action="'.get_option(DIBS_POST_URL).'" name="dibs_post_form" id="dibs_post_form" method="post" accept-charset="utf-8" >';
       foreach ($_POST as $key => $value) {
         if ( !is_numeric(strpos($key, 'input')) && !is_numeric(strpos($key, 'MAX_FILE_SIZE'))  && !is_numeric(strpos($key, 'state')) && !is_numeric(strpos($key, 'gform')) ){
           $confirmation .=  sprintf('<input type="hidden" name="%s" id="%s" value="%s" />', $key, $key, $value );
