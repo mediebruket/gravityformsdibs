@@ -46,6 +46,7 @@ class GFDibsHook{
 
 
   public static function preRenderForm($form) {
+
     $Dao = new GFDibsDao();
 
     if ( $feed_id = $Dao->isDibsForm($form['id']) ){
@@ -102,6 +103,11 @@ class GFDibsHook{
       $Dao = new GFDibsDao();
       $Transaction = $Dao->getTransactionByLeadId($Entry['id']);
       $value = ( isset($Transaction->completed) && $Transaction->completed == 1 ) ? 'completed' : 'open' ;
+    }
+    else if ( $index ==  'payment_amount'){
+      $Dao = new GFDibsDao();
+      $Transaction = $Dao->getTransactionByLeadId($Entry['id']);
+      $value = ( isset($Transaction->amount) && $Transaction->amount > 0 ) ? ($Transaction->amount/100) : 0 ;
     }
 
     return $value;
@@ -206,6 +212,9 @@ class GFDibsHook{
 
     if ( $feed_id = $Dao->isDibsForm($form['id']) ){
       $feed = $Dao->getDibsMeta($feed_id);
+
+      //$Dao->log('feed:');
+      //$Dao->log($feed);
 
       // check if user has choosen an alternative payment method
       if( !self::isDibsPayment($feed, $lead) ){
@@ -315,6 +324,24 @@ class GFDibsHook{
         //$Dao->log($_POST);
       }
 
+
+      if ( get_option(USE_MD5 ) ){
+        $md5key = null;
+        $k1 = trim( get_option(MD5_K1) );
+        $k2 = trim( get_option(MD5_K2) );
+
+        if ( $k1 && $k2 ){
+          $md5_vars = "merchant=".$_POST['merchant']."&orderid=".$order_id."&currency=".$_POST['currency']."&amount=".$_POST['amount'];
+          $md5key = md5( $k2.md5($k1.$md5_vars) );
+        }
+
+        $_POST['md5key'] = $md5key;
+      }
+
+
+      if ( $decorator = get_option(DECORATOR ) ){
+        $_POST['decorator'] = $decorator;
+      }
 
       $transaction_id = $Dao->createTransaction($_POST);
       $Dao->log('wp_rg_dibs_transaction: id');

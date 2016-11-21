@@ -2,7 +2,11 @@
 define('DIBS_LANG', 'gf_dibs_lang');
 define('DIBS_CLASS', 'GFDibsAddOn');
 define('DIBS_POST_URL', 'dibs_post_url');
+define('DECORATOR', 'dibs_decorator');
 define('MERCHANT', 'dibs_merchant_id');
+define('USE_MD5', 'dibs_use_md5');
+define('MD5_K1', 'dibs_md5_k1');
+define('MD5_K2', 'dibs_md5_k2');
 define('ORDER_ID_SUFFIX', 'suffix');
 define('LICENCE', 'gravityformsdibs_licence_key');
 
@@ -65,16 +69,25 @@ function registerAddon(){
           $settings =
             array(
               DIBS_POST_URL   => __("Platform", DIBS_LANG),
+              DECORATOR   => __("Decorator", DIBS_LANG),
               MERCHANT        => __("Merchant ID", DIBS_LANG),
+              USE_MD5         => __("Use MD5 controll", DIBS_LANG),
+              MD5_K1          => __("MD5 k1", DIBS_LANG),
+              MD5_K2          => __("MD5 k2", DIBS_LANG),
               ORDER_ID_SUFFIX => __("Prefix (order id)", DIBS_LANG),
               LICENCE         => __("Licence key", DIBS_LANG),
             );
 
           $platforms = array ( 0 => __('Select platform', DIBS_LANG ) , 'https://payment.dibspayment.com/dpw/entrypoint' => 'DX', 'https://payment.architrade.com/paymentweb/start.action' => 'D2');
+          $decorators = array ( 'default' => __('default', DIBS_LANG ) , 'basal' => 'basal', 'rich' => 'rich', 'responsive' => 'responsive' );
 
           if ( isset($_POST['updated']) ){
-            foreach ($_POST as $key => $field) {
-              update_option( $key, $field );
+            foreach ($settings as $key => $label) {
+              $value = null;
+              if( isset($_POST[$key]) ){
+                $value = $_POST[$key];
+              }
+              update_option( $key, $value );
             }
           }
 
@@ -101,6 +114,19 @@ function registerAddon(){
                 </select>
                </p>
 
+
+              <!-- decorator -->
+              <p>
+                <label for="<?php echo DECORATOR; ?>" class="gfdibs_setting"><?php echo $settings[DECORATOR];  ?></label>
+                <select name="<?php echo DECORATOR; ?>" id="<?php echo DECORATOR; ?>">
+                  <?php
+                  foreach ($decorators as $key => $value){
+                    echo sprintf('<option value="%s" %s>%s</option>', $key, selected( $key, get_option(DECORATOR), false), $value);
+                  }
+                  ?>
+                </select>
+               </p>
+
               <p>
                 <label class="gfdibs_setting" for="<?php echo MERCHANT; ?>" class="inline"><?php echo $settings[MERCHANT]; ?></label>
                 <input type="text" name="<?php echo MERCHANT; ?>" id="<?php echo $settings[MERCHANT]; ?>" value="<?php echo get_option(MERCHANT); ?>" size="80" />
@@ -109,6 +135,23 @@ function registerAddon(){
               <p>
                 <label class="gfdibs_setting" for="<?php echo ORDER_ID_SUFFIX; ?>" class="inline"><?php echo $settings[ORDER_ID_SUFFIX]; ?></label>
                 <input type="text" name="<?php echo ORDER_ID_SUFFIX; ?>" id="<?php echo ORDER_ID_SUFFIX; ?>" value="<?php echo get_option(ORDER_ID_SUFFIX); ?>" size="80" />
+              </p>
+
+              <p>
+                <label class="gfdibs_setting" for="<?php echo USE_MD5; ?>" class="inline"><?php echo $settings[USE_MD5]; ?></label>
+                <input type="checkbox" name="<?php echo USE_MD5; ?>" id="<?php echo USE_MD5; ?>" <?php checked( 'on', get_option(USE_MD5) ); ?>  />
+              </p>
+
+
+              <p>
+                <label class="gfdibs_setting" for="<?php echo MD5_K1; ?>" class="inline"><?php echo $settings[MD5_K1]; ?></label>
+                <input type="text" name="<?php echo MD5_K1; ?>" id="<?php echo MD5_K1; ?>" value="<?php echo get_option(MD5_K1); ?>" size="80" />
+              </p>
+
+
+              <p>
+                <label class="gfdibs_setting" for="<?php echo MD5_K2; ?>" class="inline"><?php echo $settings[MD5_K2]; ?></label>
+                <input type="text" name="<?php echo MD5_K2; ?>" id="<?php echo MD5_K2; ?>" value="<?php echo get_option(MD5_K2); ?>" size="80" />
               </p>
 
               <p>
