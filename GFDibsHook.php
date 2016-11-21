@@ -487,8 +487,6 @@ class GFDibsHook{
         $Dao->updateTransaction($_POST);
 
         // send confirmation mails
-        _log('confm');
-        _log($order_id);
         if ( $Transaction = $Dao->getTransactionByOrderId($order_id) ){
           _log($Transaction);
            /* prod */
@@ -587,10 +585,10 @@ class GFDibsHook{
               <th scope="col" class="width_15"><?php _e('Date', DIBS_LANG);?></th>
               <th scope="col" class="width_15"><?php _e('Transaction id', DIBS_LANG);?></th>
               <th scope="col" class="width_15"><?php _e('Ticket', DIBS_LANG);?></th>
-              <th scope="col" class="width_20"><?php _e('Payment Type', DIBS_LANG);?></th>
-
+              <th scope="col" class="width_10"><?php _e('Payment Type', DIBS_LANG);?></th>
               <th scope="col" class="width_10"><?php _e('Completed' , DIBS_LANG);?></th>
               <th scope="col" class="width_5"><?php _e('Amount', DIBS_LANG);?></th>
+              <th scope="col" class="width_15"><?php _e('Credit card', DIBS_LANG);?></th>
               <th scope="col" class="width_5"><?php _e('Test', DIBS_LANG);?></th>
             </thead>
 
@@ -602,6 +600,7 @@ class GFDibsHook{
               <td ><?php echo $Transaction->payment_type; ?></td>
               <td><?php echo ( ($Transaction->completed) ? __('yes', DIBS_LANG) : __('no', DIBS_LANG)  ); ?></td>
               <td><?php echo ($Transaction->amount/100); ?> <?php echo get_option('rg_gforms_currency');?></td>
+              <td><?php echo ( ($Transaction->paytype) ? $Transaction->paytype : ''  ); ?></td>
               <td><?php echo ( ($Transaction->test) ? __('yes', DIBS_LANG) : __('no', DIBS_LANG)  ); ?></td>
               </tr>
             </tbody>

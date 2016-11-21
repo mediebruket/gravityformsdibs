@@ -15,6 +15,7 @@ class GFDibsUpdater{
 
   function __construct($plugin_file ){
     $this->PluginFile = $plugin_file;
+
     add_filter( "plugins_api", array( $this, "setPluginInfo" ), 10, 3 );
     add_filter( "pre_set_site_transient_update_plugins", array( $this, "setTransitent" ), 1 );
     add_action( 'admin_notices', array($this, 'getLicenceKeyInfo') );
@@ -24,7 +25,7 @@ class GFDibsUpdater{
 
 
   function afterUpdate( $true, $hook_extra, $result ){
-    _debug('after update');
+    // _log('after update');
     global $wp_filesystem;
     //$this->getCurrentVersionInfo();
 
@@ -85,7 +86,6 @@ class GFDibsUpdater{
 
     if( isset($transient->response) ){
       if ( !isset($transient->response[$this->Plugin]) ){
-        // _debug('if');
 
         $current_tag = $this->updateAvailable();
         // _debug($current_tag);
@@ -183,7 +183,7 @@ class GFDibsUpdater{
     $query_vars = array( 'plugin' => $this->Slug );
     $url = self::buildUrl('releases', $query_vars);
 
-    _debug($url);
+    _log($url);
     $response = wp_remote_retrieve_body(wp_remote_get( $url ));
 
     return $response;
@@ -221,7 +221,7 @@ class GFDibsUpdater{
 
     $url = self::buildUrl('licence', $query_vars);
 
-    _debug($url);
+    // _log($url);
     $response = wp_remote_retrieve_body(wp_remote_get( $url ));
 
     return $response;
@@ -235,7 +235,7 @@ class GFDibsUpdater{
       );
 
     $url = self::buildUrl('activation', $query_vars);
-    _debug($url);
+    // _log($url);
     wp_remote_get( $url );
   }
 

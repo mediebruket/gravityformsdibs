@@ -1,6 +1,6 @@
 <?php
 
-  add_action( 'init', array('GFDibsDao', 'updateDb') );
+  // add_action( 'init', array('GFDibsDao', 'updateDb') );
   class GFDibsDao {
       protected $dibs_table_name;
       protected $gf_table_name;
@@ -52,7 +52,7 @@
         $this->log('POST variables');
         $this->log($post);
 
-         $this->db->insert(
+        $this->db->insert(
             $this->gf_table_name,
             array(
               'order_id'      => $post['orderId'],
@@ -86,18 +86,29 @@
           $transaction_id = $post['transact'];
         }
 
+        $paytype = null;
+        if ( isset($post['cardnomask']) ){
+          $paytype = $post['cardnomask'];
+
+          if ( isset($post['paytype']) ){
+            $paytype .= ' ('.$post['paytype'].')';
+          }
+        }
+
         $this->db->update(
           $this->gf_table_name,
           array(
             'completed'         => 1,
             'transaction_id'    => $transaction_id,
             'ticket'            => ( isset($post['ticket']) ) ? $post['ticket'] : false,
+            'paytype'           => $paytype,
           ),
           array( 'order_id' => $post['orderId'] ),
           array(
             '%d',
             '%s',
-            '%s'
+            '%s',
+            '%s',
           )
           );
       }
@@ -218,6 +229,7 @@
             `completed` int(1) DEFAULT NULL,
             `transaction_id` varchar(50) DEFAULT NULL,
             `payment_type` varchar(50) DEFAULT NULL,
+            `paytype` varchar(50) DEFAULT NULL,
             `test` int(1) DEFAULT NULL,
             `amount` int(10) DEFAULT NULL,
             `date_created` datetime DEFAULT NULL,
@@ -229,9 +241,20 @@
 
           $wpdb->query($sql);
 
-        // error_log($sql);
+
+        try{
+          // update $transaction_table
+          $sql = sprintf( "SHOW COLUMNS FROM %s LIKE 'paytype'; ", $transaction_table);
+          $has_column = $wpdb->query($sql);
+          if ( !$has_column ){
+            $sql = sprintf("ALTER TABLE %s ADD paytype varchar(40) DEFAULT NULL", $transaction_table ) ;
+            $wpdb->query($sql);
+          }
+        }
+        catch(Excecption $e){}
 
       }
+
 
       function setDateCompleted($lead_id){
         $sql = sprintf('UPDATE %s SET date_completed="%s" where lead_id=%d', $this->gf_table_name, date('Y-m-d H:i:s'), $lead_id );
