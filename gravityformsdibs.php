@@ -8,6 +8,7 @@
   Author URI: http://mediebruket.no
 */
 
+require_once 'utils/utils.php';
 require_once 'GFDibsDao.php';
 require_once 'GFDibsAddOn.php';
 require_once 'GFDibsHook.php';

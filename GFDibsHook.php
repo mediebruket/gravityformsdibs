@@ -595,13 +595,13 @@ class GFDibsHook{
             <tbody>
               <tr>
               <td><?php echo date('d.m.y h:i', strtotime($Transaction->date_created) ); ?></td>
-              <td ><?php echo $Transaction->transaction_id; ?></td>
-              <td ><?php echo $Transaction->ticket; ?></td>
-              <td ><?php echo $Transaction->payment_type; ?></td>
-              <td><?php echo ( ($Transaction->completed) ? __('yes', DIBS_LANG) : __('no', DIBS_LANG)  ); ?></td>
-              <td><?php echo ($Transaction->amount/100); ?> <?php echo get_option('rg_gforms_currency');?></td>
-              <td><?php echo ( ($Transaction->paytype) ? $Transaction->paytype : ''  ); ?></td>
-              <td><?php echo ( ($Transaction->test) ? __('yes', DIBS_LANG) : __('no', DIBS_LANG)  ); ?></td>
+              <td><?php echo _is($Transaction, 'transaction_id'); ?></td>
+              <td><?php echo _is($Transaction, 'ticket'); ?></td>
+              <td><?php echo _is($Transaction, 'payment_type'); ?></td>
+              <td><?php echo ( (_is($Transaction, 'completed') ) ? __('yes', DIBS_LANG) : __('no', DIBS_LANG)  ); ?></td>
+              <td><?php echo ( _is($Transaction, 'amount')/100); ?> <?php echo get_option('rg_gforms_currency');?></td>
+              <td><?php echo _is($Transaction, 'paytype'); ?></td>
+              <td><?php echo ( ( _is($Transaction, 'test') ) ? __('yes', DIBS_LANG) : __('no', DIBS_LANG)  ); ?></td>
               </tr>
             </tbody>
           </table>
