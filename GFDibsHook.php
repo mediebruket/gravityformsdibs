@@ -497,8 +497,12 @@ class GFDibsHook{
           /* test */
           // GFDibsAddOn::sendNotification('form_submission', $form, $Transaction->lead_id);
           //
+          //
+
         }
 
+        // $hook_args = array( $order_id, $form, null, $Transaction );
+        do_action('gravityformsdibs_after_payment', $order_id, $form, GFAPI::get_entry($Transaction->lead_id), $Transaction );
 
         if ( $location = self::hasRedirect($form) ){
           wp_redirect( $location );
