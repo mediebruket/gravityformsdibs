@@ -155,7 +155,7 @@ class GFDibsHook{
 
   public static function disableNotifications($unknown, $confirmation, $form, $lead){
     $Dao = new GFDibsDao();
-    _log('GFDibsHook::disableNotifications()');
+    //_log('GFDibsHook::disableNotifications()');
 
     $is_disabled = false;
 
@@ -163,7 +163,7 @@ class GFDibsHook{
       $feed = $Dao->getDibsMeta($feed_id);
 
       if(  self::isDibsPayment($feed, $lead) ){
-        $Dao->log($feed->meta['gf_dibs_no_confirmations']);
+        //$Dao->log($feed->meta['gf_dibs_no_confirmations']);
         if ( isset($feed->meta['gf_dibs_no_confirmations']) && $feed->meta['gf_dibs_no_confirmations'] == '1' ){
           $is_disabled = true;
         }

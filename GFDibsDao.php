@@ -89,11 +89,17 @@
         $paytype = null;
         if ( isset($post['cardnomask']) ){
           $paytype = $post['cardnomask'];
+        }
 
-          if ( isset($post['paytype']) ){
+        if ( isset($post['paytype']) ){
+          if ( trim($paytype) ){
             $paytype .= ' ('.$post['paytype'].')';
           }
+          else{
+            $paytype .= $post['paytype'];
+          }
         }
+
 
         $this->db->update(
           $this->gf_table_name,
