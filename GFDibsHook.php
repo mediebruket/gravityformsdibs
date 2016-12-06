@@ -27,6 +27,13 @@ class GFDibsHook{
     $DAO->setupTables();
   }
 
+  public static function checkDBUpdate(){
+    $version = (int) str_replace('.', null, _getConfig('version'));
+    if ( $version >= 130 ){
+      self::setupDBTables();
+    }
+  }
+
 
   public static function includeFrontendScripts(){
     wp_enqueue_script('jquery');
