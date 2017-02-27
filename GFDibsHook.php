@@ -381,6 +381,7 @@ class GFDibsHook{
     @amount@
     @date_created@
     @ticket@
+    @credit_card@
     @firstname@
     @lastname@
     @email@
@@ -395,12 +396,15 @@ class GFDibsHook{
 
     $placeholders = array();
 
+    // _log('get placeholders');
+    // _log($Transaction);
     //  parse placeholders
     $placeholders['order_id']       = $Transaction->order_id;
     $placeholders['transaction_id'] = $Transaction->transaction_id;
     $placeholders['amount']         = (int)$Transaction->amount/100;
     $placeholders['date_created']   = $Transaction->date_created;
     $placeholders['ticket']         = $Transaction->ticket;
+    $placeholders['credit_card']    = ( isset($Transaction->paytype) ) ? $Transaction->paytype : null;
 
     $placeholders['firstname']   = null;
     $placeholders['lastname']    = null;
@@ -424,6 +428,7 @@ class GFDibsHook{
 
     return $placeholders;
   }
+
 
   public static function replacePlaceholders( $message, $placeholders ){
     foreach ($placeholders as $key => $value) {
