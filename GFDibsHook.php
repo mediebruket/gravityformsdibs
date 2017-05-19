@@ -366,6 +366,7 @@ class GFDibsHook{
       $confirmation .= _e('Videresending til DIBS ...', DIBS_LANG);
       $confirmation .= '</form>';
 
+      $confirmation = sprintf("<a id='gf_%s' class='gform_anchor' ></a>", $form['id'] ).$confirmation;
     }
 
     return $confirmation;
