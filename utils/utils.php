@@ -28,3 +28,11 @@ if ( !function_exists('_is') ){
 
   }
 }
+
+
+if( !function_exists('_get_language') ){
+  function _get_language(){
+    $wplang = strtolower(get_option( 'WPLANG', $default = 'nb_NO' ));
+    return preg_replace('/.*_/', null, $wplang );
+  }
+}

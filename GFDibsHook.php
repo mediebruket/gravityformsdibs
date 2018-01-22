@@ -304,7 +304,8 @@ class GFDibsHook{
       $_POST['orderid']   = $order_id;
 
       $_POST['currency']  = get_option('rg_gforms_currency');
-      $_POST['language']  = 'nb_NO';
+      $_POST['language']  = _get_language();
+      $_POST['lang']      = _get_language();
       $_POST['merchant']  = trim(get_option(MERCHANT));
 
       if ( $custom_merchant_id = self::checkIfCustomMerchantId($feed) ){
