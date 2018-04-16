@@ -48,7 +48,7 @@
       ------------------------------------------------------------------------------------
       */
       function createTransaction( $post ){
-        $this->log('gform_confirmation');
+        $this->log('GFDibsDao::createTransaction()');
         $this->log('POST variables');
         $this->log($post);
 
