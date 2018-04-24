@@ -1,1 +1,1 @@
-Krever Gravity Forms 1.9 eller nyere
+Compatible with Gravity Forms 2.3.x or higher
