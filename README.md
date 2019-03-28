@@ -1,1 +1,4 @@
-Compatible with Gravity Forms 2.3.x or higher
+# DIBS Payment gateway for Gravityforms.
+
+This plugin is not maintained anymore.
+Feel free to fork.
